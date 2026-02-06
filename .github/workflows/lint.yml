@@ -1,0 +1,20 @@
+name: Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  buildifier:
+    runs-on: ubuntu-22.04
+    env:
+      BUILDIFIER_VERSION: v8.2.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: |
+          sudo wget https://github.com/bazelbuild/buildtools/releases/download/${{ env.BUILDIFIER_VERSION }}/buildifier-linux-amd64 -O /usr/local/bin/buildifier
+          sudo chmod +x /usr/local/bin/buildifier
+
+      - run: buildifier -lint=warn -mode=check -warnings=all -r .

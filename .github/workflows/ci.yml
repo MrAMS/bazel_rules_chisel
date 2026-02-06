@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+  pull_request:
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-version: "1.x"
+          bazelisk-cache: true
+          repository-cache: true
+
+      - name: Build all targets
+        run: bazel build //...
+
+      - name: Run smoke tests
+        run: |
+          bazel test //tests/smoke:verilog_concat_test --test_output=errors
+          bazel test //tests/smoke:simple_adder_test --test_output=errors
+
+      - name: Run Chisel version compatibility checks
+        run: tests/version_compat/check_chisel_versions.sh

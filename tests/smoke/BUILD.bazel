@@ -1,0 +1,39 @@
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
+load("//chisel:defs.bzl", "chisel_binary", "chisel_library", "chisel_test")
+load("//verilog:defs.bzl", "verilog_single_file_library")
+
+package(default_visibility = ["//visibility:private"])
+
+chisel_library(
+    name = "simple_adder_lib",
+    srcs = ["SimpleAdder.scala"],
+)
+
+chisel_binary(
+    name = "emit_simple_adder",
+    srcs = ["EmitSimpleAdder.scala"],
+    main_class = "smoke.EmitSimpleAdder",
+    deps = [":simple_adder_lib"],
+)
+
+chisel_test(
+    name = "simple_adder_test",
+    srcs = ["SimpleAdderTest.scala"],
+    deps = [":simple_adder_lib"],
+)
+
+verilog_single_file_library(
+    name = "merged_sv",
+    srcs = [
+        "dummy0.sv",
+        "dummy1.v",
+        "ignore.txt",
+    ],
+)
+
+sh_test(
+    name = "verilog_concat_test",
+    srcs = ["verilog_concat_test.sh"],
+    args = ["$(location :merged_sv)"],
+    data = [":merged_sv"],
+)

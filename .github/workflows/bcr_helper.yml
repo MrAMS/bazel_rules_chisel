@@ -1,0 +1,60 @@
+name: BCR Helper
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  update-release-with-bcr-info:
+    name: Pack, Calc Hash & Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Package & Calculate Hash
+        id: calc
+        run: |
+          REPO_NAME="${{ github.event.repository.name }}"
+          TAG_NAME="${{ github.ref_name }}"
+          PURE_VERSION="${TAG_NAME#v}"
+          ASSET_NAME="${REPO_NAME}-${PURE_VERSION}.tar.gz"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/${ASSET_NAME}"
+          PREFIX_DIR="${REPO_NAME}-${PURE_VERSION}"
+
+          git archive --format=tar.gz --prefix="${PREFIX_DIR}/" -o "$ASSET_NAME" "$TAG_NAME"
+
+          HASH_VALUE=$(openssl dgst -sha256 -binary "$ASSET_NAME" | openssl base64 -A)
+          SRI_HASH="sha256-$HASH_VALUE"
+
+          JSON_CONTENT=$(jq -n \
+            --arg integrity "$SRI_HASH" \
+            --arg strip_prefix "$PREFIX_DIR" \
+            --arg url "$DOWNLOAD_URL" \
+            '{integrity: $integrity, strip_prefix: $strip_prefix, url: $url}')
+
+          {
+            echo "## BCR Submission Data"
+            echo
+            echo '```json'
+            echo "$JSON_CONTENT" | jq .
+            echo '```'
+          } > release_body.md
+
+          echo "ASSET_NAME=$ASSET_NAME" >> "$GITHUB_ENV"
+
+      - name: Create/Update Release with Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body_path: release_body.md
+          draft: false
+          prerelease: false
+          files: ${{ env.ASSET_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
