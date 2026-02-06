@@ -1,5 +1,7 @@
 # rules_chisel
 
+[![CI](https://github.com/MrAMS/bazel_rules_chisel/actions/workflows/ci.yml/badge.svg)](https://github.com/MrAMS/bazel_rules_chisel/actions/workflows/ci.yml)
+
 Bazel rules for Chisel projects with Bzlmod support.
 
 This repository packages the following helpers as a BCR-friendly module:
