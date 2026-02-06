@@ -70,7 +70,7 @@ chisel = use_extension("@rules_chisel//chisel:extensions.bzl", "chisel")
 chisel.toolchain(
     chisel_version = "7.2.0",
     scala_version = "2.13.17", # should match rules_scala's scala_version
-    firtool_resolver_version = "2.0.1",  # should match the selected Chisel version
+    firtool_resolver_version = "2.0.1",  # choose a known compatible resolver for your Chisel release
 )
 use_repo(chisel, "chisel_maven")
 ```
@@ -80,7 +80,7 @@ use_repo(chisel, "chisel_maven")
 
 - Scala toolchain setup is **mandatory** in your own `MODULE.bazel`. This is by design: `rules_chisel` leaves Scala version/toolchain control to users.
 - `chisel_test` wraps `scala_test` and sets up a Verilator runtime environment. It expects `@verilator//:bin/verilator` and `@verilator//:verilator_includes`. If you don't use `chisel_test`, you can skip the Verilator dependency.
-- Please explicitly set `firtool_resolver_version` in `chisel.toolchain(...)`. It is tightly coupled with `chisel_version`. See [Chisel Project Versioning](https://www.chisel-lang.org/docs/appendix/versioning)
+- Please explicitly set `firtool_resolver_version` in `chisel.toolchain(...)`. Use the Chisel Maven POM as the source of truth (for example: [`chisel_2.13-7.8.0.pom`](https://repo1.maven.org/maven2/org/chipsalliance/chisel_2.13/7.8.0/chisel_2.13-7.8.0.pom), see dependency `firtool-resolver_2.13` with `<version>2.0.1</version>`). This does **not** map 1:1 to the table on [Chisel Project Versioning](https://www.chisel-lang.org/docs/appendix/versioning).
 
 ## Usage
 
@@ -125,7 +125,7 @@ verilog_single_file_library(
 - `repo_name` (default: `"chisel_maven"`)
 - `chisel_version` (default: `"7.2.0"`)
 - `scala_version` (default: `"2.13.17"`)
-- `firtool_resolver_version` (it must match `chisel_version`, see [Chisel Project Versioning](https://www.chisel-lang.org/docs/appendix/versioning))
+- `firtool_resolver_version` (set this explicitly; check the dependency in `https://repo1.maven.org/maven2/org/chipsalliance/chisel_2.13/<chisel_version>/chisel_2.13-<chisel_version>.pom`)
 - `scalatest_version` (default: `"3.2.19"`)
 - `repositories` (default: Maven Central + Sonatype releases)
 - `fetch_sources` (default: `True`)
