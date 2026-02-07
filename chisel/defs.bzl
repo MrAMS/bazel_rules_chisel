@@ -35,9 +35,13 @@ if [[ ! -f "$VERILATOR_ROOT/include/verilated_config.h" && -f "$VERILATOR_ROOT/i
         "$VERILATOR_ROOT/include/verilated_config.h.in" > "$VERILATOR_ROOT/include/verilated_config.h"
 fi
 
+# Generate verilator_includer if missing (must be valid Python: invoked via `python3`)
 if [[ ! -f "$VERILATOR_ROOT/bin/verilator_includer" ]]; then
-    printf '%s' 'import sys; [print("#include \\\"" + f + "\\\"") for f in sys.argv[2:]]' \
-        > "$VERILATOR_ROOT/bin/verilator_includer"
+    cat > "$VERILATOR_ROOT/bin/verilator_includer" << 'PYTHON_EOF'
+import sys
+for f in sys.argv[2:]:
+    print('#include "' + f + '"')
+PYTHON_EOF
 fi
 
 set +e
