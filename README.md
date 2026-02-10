@@ -1,5 +1,6 @@
 # rules_chisel
 
+[![BCR](https://img.shields.io/badge/BCR-rules_chisel-green?logo=bazel)](https://registry.bazel.build/modules/rules_chisel)
 [![CI](https://github.com/MrAMS/bazel_rules_chisel/actions/workflows/ci.yml/badge.svg)](https://github.com/MrAMS/bazel_rules_chisel/actions/workflows/ci.yml)
 
 Bazel rules for Chisel projects with Bzlmod support.
