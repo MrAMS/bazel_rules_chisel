@@ -130,6 +130,7 @@ SCALA
   (
     cd "${ws}"
     "${BAZEL_BIN}" \
+      --batch \
       --nosystem_rc \
       --nohome_rc \
       --noworkspace_rc \
