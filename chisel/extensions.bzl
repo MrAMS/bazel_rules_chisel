@@ -1,6 +1,9 @@
 """Bzlmod extension for Chisel Maven dependencies."""
 
 load("@rules_jvm_external//:defs.bzl", "maven_install")
+load("@rules_jvm_external//private/extensions:download_pinned_deps.bzl", "download_pinned_deps")
+load("@rules_jvm_external//private/rules:v1_lock_file.bzl", "v1_lock_file")
+load("@rules_jvm_external//private/rules:v2_lock_file.bzl", "v2_lock_file")
 
 _DEFAULT_REPOSITORIES = [
     "https://repo1.maven.org/maven2",
@@ -15,6 +18,7 @@ _DEFAULT_SETTINGS = struct(
     scalatest_version = "3.2.19",
     repositories = _DEFAULT_REPOSITORIES,
     fetch_sources = True,
+    lock_file = None,
 )
 
 def _scala_short(scala_version):
@@ -40,26 +44,32 @@ def _chisel_alias_repo_impl(repository_ctx):
 
 alias(
     name = "chisel",
-    actual = "@{repo}//:{chisel_target}",
+    actual = "@{deps_repo}//:{chisel_target}",
 )
 
 alias(
     name = "firtool_resolver",
-    actual = "@{repo}//:{firtool_resolver_target}",
+    actual = "@{deps_repo}//:{firtool_resolver_target}",
 )
 
 alias(
     name = "chisel_plugin",
-    actual = "@{repo}//:{chisel_plugin_target}",
+    actual = "@{deps_repo}//:{chisel_plugin_target}",
 )
 
 alias(
     name = "scalatest",
-    actual = "@{repo}//:{scalatest_target}",
+    actual = "@{deps_repo}//:{scalatest_target}",
+)
+
+alias(
+    name = "pin",
+    actual = "@{pin_repo}//:pin",
 )
 
 """.format(
-            repo = repository_ctx.attr.internal_repo_name,
+            deps_repo = repository_ctx.attr.deps_repo_name,
+            pin_repo = repository_ctx.attr.pin_repo_name,
             chisel_target = chisel_target,
             firtool_resolver_target = firtool_resolver_target,
             chisel_plugin_target = chisel_plugin_target,
@@ -70,7 +80,8 @@ alias(
 _chisel_alias_repo = repository_rule(
     implementation = _chisel_alias_repo_impl,
     attrs = {
-        "internal_repo_name": attr.string(mandatory = True),
+        "deps_repo_name": attr.string(mandatory = True),
+        "pin_repo_name": attr.string(mandatory = True),
         "scala_version": attr.string(mandatory = True),
     },
 )
@@ -100,6 +111,32 @@ def _collect_settings(module_ctx):
 
     return _DEFAULT_SETTINGS
 
+def _download_pinned_lockfile_artifacts(module_ctx, lock_file):
+    lock_file_content = module_ctx.read(module_ctx.path(lock_file))
+    if not len(lock_file_content):
+        parsed_lock_file = {
+            "artifacts": {},
+            "dependencies": {},
+            "repositories": {},
+            "version": "2",
+        }
+    else:
+        parsed_lock_file = json.decode(lock_file_content)
+
+    if v2_lock_file.is_valid_lock_file(parsed_lock_file):
+        importer = v2_lock_file
+    elif v1_lock_file.is_valid_lock_file(parsed_lock_file):
+        importer = v1_lock_file
+    else:
+        fail("Unable to read lock file: {}".format(lock_file))
+
+    download_pinned_deps(
+        mctx = module_ctx,
+        artifacts = importer.get_artifacts(parsed_lock_file),
+        http_files = [],
+        has_m2local = importer.has_m2local(parsed_lock_file),
+    )
+
 def _chisel_extension_impl(module_ctx):
     settings = _collect_settings(module_ctx)
     scala_short = _scala_short(settings.scala_version)
@@ -113,21 +150,29 @@ def _chisel_extension_impl(module_ctx):
         "org.scalatest:scalatest_{}:{}".format(scala_short, settings.scalatest_version),
     ]
 
-    maven_install(
-        name = internal_repo_name,
-        artifacts = artifacts,
-        repositories = settings.repositories,
-        fetch_sources = settings.fetch_sources,
-    )
+    if settings.lock_file:
+        _download_pinned_lockfile_artifacts(module_ctx, settings.lock_file)
+
+    maven_install_args = {
+        "artifacts": artifacts,
+        "fetch_sources": settings.fetch_sources,
+        "name": internal_repo_name,
+        "repositories": settings.repositories,
+    }
+    if settings.lock_file:
+        maven_install_args["maven_install_json"] = settings.lock_file
+
+    maven_install(**maven_install_args)
 
     _chisel_alias_repo(
         name = settings.repo_name,
-        internal_repo_name = internal_repo_name,
+        deps_repo_name = internal_repo_name,
+        pin_repo_name = "unpinned_" + internal_repo_name if settings.lock_file else internal_repo_name,
         scala_version = settings.scala_version,
     )
 
     return module_ctx.extension_metadata(
-        reproducible = False,
+        reproducible = settings.lock_file != None,
         root_module_direct_deps = [settings.repo_name],
         root_module_direct_dev_deps = [],
     )
@@ -137,6 +182,7 @@ toolchain = tag_class(
         "chisel_version": attr.string(default = _DEFAULT_SETTINGS.chisel_version),
         "fetch_sources": attr.bool(default = _DEFAULT_SETTINGS.fetch_sources),
         "firtool_resolver_version": attr.string(default = _DEFAULT_SETTINGS.firtool_resolver_version),
+        "lock_file": attr.label(default = _DEFAULT_SETTINGS.lock_file),
         "repo_name": attr.string(default = _DEFAULT_SETTINGS.repo_name),
         "repositories": attr.string_list(default = _DEFAULT_SETTINGS.repositories),
         "scala_version": attr.string(default = _DEFAULT_SETTINGS.scala_version),

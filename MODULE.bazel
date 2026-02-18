@@ -1,6 +1,6 @@
 module(
     name = "rules_chisel",
-    version = "0.1.0",
+    version = "0.2.0",
     bazel_compatibility = [">=7.5.0"],
     compatibility_level = 0,
 )
@@ -8,17 +8,25 @@ module(
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "rules_jvm_external", version = "6.7")
 bazel_dep(name = "rules_scala", version = "7.1.5")
-bazel_dep(name = "rules_verilator", version = "0.1.0")
 bazel_dep(name = "verilator", version = "5.036.bcr.3")
 bazel_dep(name = "rules_license", version = "1.0.0")
-bazel_dep(name = "rules_shell", version = "0.3.0")
-bazel_dep(name = "rules_java", version = "8.14.0")
 
-scala_config = use_extension("@rules_scala//scala/extensions:config.bzl", "scala_config")
+bazel_dep(name = "rules_shell", version = "0.3.0", dev_dependency = True)
+bazel_dep(name = "rules_java", version = "8.14.0", dev_dependency = True)
+
+scala_config = use_extension(
+    "@rules_scala//scala/extensions:config.bzl",
+    "scala_config",
+    dev_dependency = True,
+)
 scala_config.settings(scala_version = "2.13.17")
 use_repo(scala_config, "rules_scala_config")
 
-scala_deps = use_extension("@rules_scala//scala/extensions:deps.bzl", "scala_deps")
+scala_deps = use_extension(
+    "@rules_scala//scala/extensions:deps.bzl",
+    "scala_deps",
+    dev_dependency = True,
+)
 scala_deps.scala()
 scala_deps.scalatest()
 use_repo(
@@ -45,12 +53,20 @@ use_repo(
     "rules_scala_toolchains",
 )
 
-register_toolchains("@rules_scala_toolchains//...:all")
+register_toolchains(
+    "@rules_scala_toolchains//...:all",
+    dev_dependency = True,
+)
 
 chisel = use_extension("//chisel:extensions.bzl", "chisel")
 chisel.toolchain(
     chisel_version = "7.2.0",
+    fetch_sources = True,
     firtool_resolver_version = "2.0.1",
+    lock_file = "//:maven_install.json",
     scala_version = "2.13.17",
 )
-use_repo(chisel, "chisel_maven")
+use_repo(
+    chisel,
+    "chisel_maven",
+)
