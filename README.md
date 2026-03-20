@@ -33,43 +33,17 @@ bazel_dep(name = "rules_scala", version = "7.1.5")
 # rules_chisel intentionally does NOT auto-register Scala toolchains.
 scala_config = use_extension("@rules_scala//scala/extensions:config.bzl", "scala_config")
 scala_config.settings(scala_version = "2.13.17")
-use_repo(scala_config, "rules_scala_config")
 
 scala_deps = use_extension("@rules_scala//scala/extensions:deps.bzl", "scala_deps")
 scala_deps.scala()
-scala_deps.scalatest()  # needed by chisel_test (scala_test toolchain)
-use_repo(
-    scala_deps,
-    "io_bazel_rules_scala_scala_compiler",
-    "io_bazel_rules_scala_scala_library",
-    "io_bazel_rules_scala_scala_reflect",
-    "io_bazel_rules_scala_scalactic",
-    "io_bazel_rules_scala_scalatest",
-    "io_bazel_rules_scala_scalatest_compatible",
-    "io_bazel_rules_scala_scalatest_core",
-    "io_bazel_rules_scala_scalatest_diagrams",
-    "io_bazel_rules_scala_scalatest_featurespec",
-    "io_bazel_rules_scala_scalatest_flatspec",
-    "io_bazel_rules_scala_scalatest_freespec",
-    "io_bazel_rules_scala_scalatest_funspec",
-    "io_bazel_rules_scala_scalatest_funsuite",
-    "io_bazel_rules_scala_scalatest_matchers_core",
-    "io_bazel_rules_scala_scalatest_mustmatchers",
-    "io_bazel_rules_scala_scalatest_propspec",
-    "io_bazel_rules_scala_scalatest_refspec",
-    "io_bazel_rules_scala_scalatest_shouldmatchers",
-    "io_bazel_rules_scala_scalatest_wordspec",
-    "rules_scala_toolchains",
-)
-register_toolchains("@rules_scala_toolchains//...:all")
+scala_deps.scalatest()  # only needed if you use chisel_test
 
-# Required for chisel_test: Verilator runtime/tools.
-bazel_dep(name = "verilator", version = "5.044")
+bazel_dep(name = "verilator", version = "5.044") # only needed if you use chisel_test
 
 # Chisel dependencies (creates @chisel_maven)
 chisel = use_extension("@rules_chisel//chisel:extensions.bzl", "chisel")
 chisel.toolchain(
-    chisel_version = "7.2.0",
+    chisel_version = "7.8.0",
     scala_version = "2.13.17", # should match rules_scala's scala_version
     firtool_resolver_version = "2.0.1",  # choose a known compatible resolver for your Chisel release
     lock_file = "//:maven_install.json",  # run `touch maven_install.json && REPIN=1 bazel run @chisel_maven//:pin` to generate the lock file
@@ -84,7 +58,7 @@ If you are authoring a reusable Bazel module (not an application root) and only 
 
 - Scala toolchain setup is **mandatory** in your own `MODULE.bazel`. This is by design: `rules_chisel` leaves Scala version/toolchain control to users.
 - `chisel_test` wraps `scala_test` and sets up a Verilator runtime environment. It expects `@verilator//:bin/verilator` and `@verilator//:verilator_includes`. If you don't use `chisel_test`, you can skip the Verilator dependency.
-- Please explicitly set `firtool_resolver_version` in `chisel.toolchain(...)`. Use the Chisel Maven POM as the source of truth (for example: [`chisel_2.13-7.8.0.pom`](https://repo1.maven.org/maven2/org/chipsalliance/chisel_2.13/7.8.0/chisel_2.13-7.8.0.pom), see dependency `firtool-resolver_2.13` with `<version>2.0.1</version>`). This does **not** map 1:1 to the table on [Chisel Project Versioning](https://www.chisel-lang.org/docs/appendix/versioning).
+- Please explicitly set `firtool_resolver_version` in `chisel.toolchain(...)`. Use the Chisel Maven POM as the source of truth (for example: [`chisel_2.13-7.8.0.pom`](https://repo1.maven.org/maven2/org/chipsalliance/chisel_2.13/7.8.0/chisel_2.13-7.8.0.pom), see dependency `firtool-resolver_2.13` with `<version>2.0.1</version>`).
 - To speed up dependency resolution, set `lock_file` and pin once: `touch maven_install.json && REPIN=1 bazel run @chisel_maven//:pin`.
 
 ## Usage

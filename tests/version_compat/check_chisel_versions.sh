@@ -73,18 +73,9 @@ local_path_override(
 bazel_dep(name = "rules_scala", version = "7.1.5")
 scala_config = use_extension("@rules_scala//scala/extensions:config.bzl", "scala_config")
 scala_config.settings(scala_version = "${SCALA_VERSION}")
-use_repo(scala_config, "rules_scala_config")
 
 scala_deps = use_extension("@rules_scala//scala/extensions:deps.bzl", "scala_deps")
 scala_deps.scala()
-use_repo(
-    scala_deps,
-    "io_bazel_rules_scala_scala_compiler",
-    "io_bazel_rules_scala_scala_library",
-    "io_bazel_rules_scala_scala_reflect",
-    "rules_scala_toolchains",
-)
-register_toolchains("@rules_scala_toolchains//...:all")
 
 chisel = use_extension("@rules_chisel//chisel:extensions.bzl", "chisel"${extension_dev_flag})
 chisel.toolchain(
