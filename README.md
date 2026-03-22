@@ -59,7 +59,8 @@ If you are authoring a reusable Bazel module (not an application root) and only 
 - Scala toolchain setup is **mandatory** in your own `MODULE.bazel`. This is by design: `rules_chisel` leaves Scala version/toolchain control to users.
 - `chisel_test` wraps `scala_test` and sets up a Verilator runtime environment. It expects `@verilator//:bin/verilator` and `@verilator//:verilator_includes`. If you don't use `chisel_test`, you can skip the Verilator dependency.
 - Please explicitly set `firtool_resolver_version` in `chisel.toolchain(...)`. Use the Chisel Maven POM as the source of truth (for example: [`chisel_2.13-7.8.0.pom`](https://repo1.maven.org/maven2/org/chipsalliance/chisel_2.13/7.8.0/chisel_2.13-7.8.0.pom), see dependency `firtool-resolver_2.13` with `<version>2.0.1</version>`).
-- To speed up dependency resolution, set `lock_file` and pin once: `touch maven_install.json && REPIN=1 bazel run @chisel_maven//:pin`.
+- To make dependency resolution faster, deterministic and avoid repeated conflict-selection drift/noise across builds, set `lock_file` and pin once: `touch maven_install.json && REPIN=1 bazel run @chisel_maven//:pin`.
+- `lock_file` records a resolved result. The first pin still performs dependency resolution; repin when you intentionally change dependency versions.
 
 ## Usage
 
