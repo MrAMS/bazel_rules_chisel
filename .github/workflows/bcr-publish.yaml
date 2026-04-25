@@ -30,8 +30,9 @@ jobs:
     with:
       attest: false
       tag_name: ${{ inputs.release_version }}
-      author_name: periareon-bot
-      author_email: 260522848+periareon-bot@users.noreply.github.com
+      author_name: hw-bzl-bot
+      # https://api.github.com/users/hw-bzl-bot
+      author_email: 279263554+hw-bzl-bot@users.noreply.github.com
       # Tags don't include a "v" prefix
       tag_prefix: ""
       # GitHub repository which is a fork of the upstream where the Pull Request will be opened.
