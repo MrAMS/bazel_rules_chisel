@@ -1,3 +1,5 @@
+"""Repository rule to fetch OS-specific circt binaries."""
+
 def _circt_repo_impl(ctx):
     os_name = ctx.os.name.lower()
     if os_name.startswith("mac"):
@@ -11,8 +13,8 @@ def _circt_repo_impl(ctx):
         sha256 = "c00d58b93c9d7ad13f0e95e78cef180a5dfb9a416cd11a2dd7814fdbe4132439"
 
     kwargs = {
-        "url": url,
         "stripPrefix": "firtool-1.137.0",
+        "url": url,
     }
     if sha256:
         kwargs["sha256"] = sha256
