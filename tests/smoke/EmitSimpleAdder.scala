@@ -4,6 +4,11 @@ import java.nio.file.{Files, Paths}
 
 object EmitSimpleAdder {
   def main(args: Array[String]): Unit = {
+    // We vendor the MLIR representation here rather than running a full Chisel compilation
+    // (e.g. via `ChiselStage.emitCHIRRTL`). This keeps the smoke test extremely fast and lightweight
+    // by avoiding circt/JNI dependencies during the Scala execution phase.
+    // We emit the MLIR dialect natively because the bazel rules we are testing explicitly 
+    // pass `--format=mlir` to firtool.
     val mlir = """module {
   firrtl.circuit "SimpleAdder" {
     firrtl.module @SimpleAdder(in %clock: !firrtl.clock, in %reset: !firrtl.uint<1>, in %a: !firrtl.uint<8>, in %b: !firrtl.uint<8>, out %c: !firrtl.uint<8>) attributes {convention = #firrtl<convention scalarized>} {
