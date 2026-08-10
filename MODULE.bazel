@@ -44,19 +44,11 @@ bazel_dep(name = "rules_python", version = "1.7.0", dev_dependency = True)
 
 bazel_dep(name = "rules_verilog", version = "1.1.1")
 
-http_archive = use_repo_rule(
-    "@bazel_tools//tools/build_defs/repo:http.bzl",
-    "http_archive",
+circt_repo = use_repo_rule(
+    "//verilog:circt_repo.bzl",
+    "circt_repo",
 )
 
-http_archive(
+circt_repo(
     name = "circt",
-    build_file_content = """
-package(default_visibility = ["//visibility:public"])
-
-exports_files(["bin/firtool"])
-""",
-    sha256 = "c00d58b93c9d7ad13f0e95e78cef180a5dfb9a416cd11a2dd7814fdbe4132439",
-    strip_prefix = "firtool-1.137.0",
-    url = "https://github.com/llvm/circt/releases/download/firtool-1.137.0/circt-full-static-linux-x64.tar.gz",
 )
