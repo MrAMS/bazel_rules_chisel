@@ -1,7 +1,7 @@
 """Verilog helpers exported by rules_chisel."""
 
-load("//chisel:defs.bzl", _verilog_single_file_library = "verilog_single_file_library")
 load("@rules_verilog//verilog:defs.bzl", "VerilogInfo")
+load("//chisel:defs.bzl", _verilog_single_file_library = "verilog_single_file_library")
 
 verilog_single_file_library = _verilog_single_file_library
 
