@@ -47,7 +47,7 @@ fir_library = rule(
             executable = True,
             allow_files = True,
             cfg = "exec",
-            default = Label("@circt//:bin/firtool"),
+            default = Label("@chisel_firtool//:bin/firtool"),
         ),
     },
 )
@@ -112,7 +112,7 @@ def verilog_attrs():
             executable = True,
             allow_files = True,
             cfg = "exec",
-            default = Label("@circt//:bin/firtool"),
+            default = Label("@chisel_firtool//:bin/firtool"),
         ),
     }
 
