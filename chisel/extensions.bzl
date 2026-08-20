@@ -4,6 +4,9 @@ load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_jvm_external//private/extensions:download_pinned_deps.bzl", "download_pinned_deps")
 load("@rules_jvm_external//private/rules:v1_lock_file.bzl", "v1_lock_file")
 load("@rules_jvm_external//private/rules:v2_lock_file.bzl", "v2_lock_file")
+load("//verilog:firtool_repo.bzl", "firtool_repo")
+
+_FIRTOOL_REPO_NAME = "chisel_firtool"
 
 _DEFAULT_REPOSITORIES = [
     "https://repo1.maven.org/maven2",
@@ -170,6 +173,13 @@ def _chisel_extension_impl(module_ctx):
         pin_repo_name = "unpinned_" + internal_repo_name if settings.lock_file else internal_repo_name,
         scala_version = settings.scala_version,
     )
+    firtool_repo(
+        name = _FIRTOOL_REPO_NAME,
+        chisel_version = settings.chisel_version,
+        firtool_resolver_version = settings.firtool_resolver_version,
+        repositories = settings.repositories,
+        scala_version = settings.scala_version,
+    )
 
     root_is_dev = True
     for mod in module_ctx.modules:
@@ -180,8 +190,8 @@ def _chisel_extension_impl(module_ctx):
 
     return module_ctx.extension_metadata(
         reproducible = settings.lock_file != None,
-        root_module_direct_deps = [] if root_is_dev else [settings.repo_name],
-        root_module_direct_dev_deps = [settings.repo_name] if root_is_dev else [],
+        root_module_direct_deps = [] if root_is_dev else [settings.repo_name, _FIRTOOL_REPO_NAME],
+        root_module_direct_dev_deps = [settings.repo_name, _FIRTOOL_REPO_NAME] if root_is_dev else [],
     )
 
 toolchain = tag_class(

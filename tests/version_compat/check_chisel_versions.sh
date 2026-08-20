@@ -83,7 +83,7 @@ chisel.toolchain(
     scala_version = "${SCALA_VERSION}",
     firtool_resolver_version = "${firtool_version}",
 )
-use_repo(chisel, "chisel_maven")
+use_repo(chisel, "chisel_firtool", "chisel_maven")
 MODULE
 
   cat > "${ws}/BUILD.bazel" <<'BUILD'
@@ -99,6 +99,13 @@ chisel_binary(
     srcs = ["Main.scala"],
     deps = [":compat_lib"],
     main_class = "compat.Main",
+)
+
+genrule(
+    name = "firtool_version",
+    outs = ["firtool-version.txt"],
+    cmd = "$(location @chisel_firtool//:bin/firtool) --version > $@",
+    tools = ["@chisel_firtool//:bin/firtool"],
 )
 BUILD
 
@@ -135,7 +142,7 @@ SCALA
       --nohome_rc \
       --noworkspace_rc \
       --output_user_root="${out_root}" \
-      build //:compat_lib //:compat_bin \
+      build //:compat_lib //:compat_bin //:firtool_version \
       --enable_bzlmod \
       --repository_cache="${TMP_ROOT}/repo_cache" \
       --disk_cache="${TMP_ROOT}/disk_cache" \

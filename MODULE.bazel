@@ -37,18 +37,10 @@ chisel.toolchain(
 )
 use_repo(
     chisel,
+    "chisel_firtool",
     "chisel_maven",
 )
 
 bazel_dep(name = "rules_python", version = "1.7.0", dev_dependency = True)
 
 bazel_dep(name = "rules_verilog", version = "1.1.1")
-
-circt_repo = use_repo_rule(
-    "//verilog:circt_repo.bzl",
-    "circt_repo",
-)
-
-circt_repo(
-    name = "circt",
-)

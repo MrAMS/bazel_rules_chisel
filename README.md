@@ -10,12 +10,16 @@ This repository packages the following helpers as a BCR-friendly module:
 - `chisel_binary`
 - `chisel_library`
 - `chisel_test`
+- `fir_library`
+- `verilog_file`
+- `verilog_directory`
 - `verilog_single_file_library`
 
 ## Features
 
-- One extension (`chisel.toolchain`) to fetch Chisel/ScalaTest Maven artifacts.
+- One extension (`chisel.toolchain`) to fetch Chisel/ScalaTest Maven artifacts and a compatible native firtool.
 - Ready-to-use macro defaults via `@chisel_maven` aliases (`:chisel`, `:chisel_plugin`, etc.).
+- Automatic firtool version selection from Chisel's own build metadata via `@chisel_firtool`.
 - Built-in Verilator runtime wrapper in `chisel_test` for BCR Verilator layout quirks.
 - Minimal smoke tests and GitHub CI workflows.
 
@@ -38,7 +42,7 @@ scala_deps = use_extension("@rules_scala//scala/extensions:deps.bzl", "scala_dep
 scala_deps.scala()
 scala_deps.scalatest()  # only needed if you use chisel_test
 
-# Chisel dependencies (creates @chisel_maven)
+# Chisel dependencies (creates @chisel_maven and @chisel_firtool)
 chisel = use_extension("@rules_chisel//chisel:extensions.bzl", "chisel")
 chisel.toolchain(
     chisel_version = "7.8.0",
@@ -46,17 +50,17 @@ chisel.toolchain(
     firtool_resolver_version = "2.0.1",  # choose a known compatible resolver for your Chisel release
     lock_file = "//:maven_install.json",  # run `touch maven_install.json && REPIN=1 bazel run @chisel_maven//:pin` to generate the lock file
 )
-use_repo(chisel, "chisel_maven")
+use_repo(chisel, "chisel_firtool", "chisel_maven")
 ```
 
 If you are authoring a reusable Bazel module (not an application root) and only need Chisel for that module's own development/tests, use `dev_dependency = True` on `use_extension(...)` so your toolchain tag does not leak to downstream consumers.
-
 
 ## Notes
 
 - Scala toolchain setup is **mandatory** in your own `MODULE.bazel`. This is by design: `rules_chisel` leaves Scala version/toolchain control to users.
 - `chisel_test` wraps `scala_test` and sets up a Verilator runtime environment. It expects `@verilator//:bin/verilator` and `@verilator//:verilator_includes`. If you don't use `chisel_test`, you can skip the Verilator dependency.
 - Please explicitly set `firtool_resolver_version` in `chisel.toolchain(...)`. Use the Chisel Maven POM as the source of truth (for example: [`chisel_2.13-7.8.0.pom`](https://repo1.maven.org/maven2/org/chipsalliance/chisel_2.13/7.8.0/chisel_2.13-7.8.0.pom), see dependency `firtool-resolver_2.13` with `<version>2.0.1</version>`).
+- `@chisel_firtool` reads the configured Chisel artifact's `BuildInfo.firtoolVersion` and asks `firtool-resolver` for that exact native tool. The download happens while Bazel prepares external repositories, not inside each Verilog action.
 - To make dependency resolution faster, deterministic and avoid repeated conflict-selection drift/noise across builds, set `lock_file` and pin once: `touch maven_install.json && REPIN=1 bazel run @chisel_maven//:pin`.
 - `lock_file` records a resolved result. The first pin still performs dependency resolution; repin when you intentionally change dependency versions.
 
@@ -66,7 +70,13 @@ You can check `tests` for examples as well.
 
 ```starlark
 load("@rules_chisel//chisel:defs.bzl", "chisel_binary", "chisel_library", "chisel_test")
-load("@rules_chisel//verilog:defs.bzl", "verilog_single_file_library")
+load(
+    "@rules_chisel//verilog:defs.bzl",
+    "fir_library",
+    "verilog_directory",
+    "verilog_file",
+    "verilog_single_file_library",
+)
 
 chisel_library(
     name = "adder_lib",
@@ -84,6 +94,21 @@ chisel_test(
     name = "adder_test",
     srcs = ["AdderTest.scala"],
     deps = [":adder_lib"],
+)
+
+fir_library(
+    name = "adder_fir",
+    generator = ":emit_adder",
+)
+
+verilog_file(
+    name = "adder.sv",
+    srcs = [":adder_fir"],
+)
+
+verilog_directory(
+    name = "adder_split",
+    srcs = [":adder_fir"],
 )
 
 verilog_single_file_library(
@@ -127,6 +152,7 @@ Local smoke targets:
 bazel build //...
 bazel test //tests/smoke:verilog_concat_test
 bazel test //tests/smoke:simple_adder_test --test_output=errors
+bazel test //tests/smoke:fir_verilog_test --test_output=errors
 tests/version_compat/check_chisel_versions.sh
 ```
 
